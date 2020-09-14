@@ -1,0 +1,59 @@
+{
+	"vera": {
+		"port": "80",
+		"ip": "192.168.142.248",
+		"url_pfx": "/port_3480"
+	},
+	"timestamp": 1588246295,
+	"version": 3,
+	"devices": [{
+		"behavior": "dimmer",
+		"vera": {
+			"device_id": "65",
+			"set_url": "data_request?id=lu_action&DeviceNum=%1&serviceId=urn:upnp-org:serviceId:Dimming1&action=SetLoadLevelTarget&newLoadlevelTarget=%2"
+		},
+		"name": "SK_OverloopLicht",
+		"room": "5eac18017aab7f29e4b4deac"
+	}, {
+		"behavior": "switch",
+		"vera": {
+			"device_id": "27",
+			"set_url": "data_request?id=lu_action&DeviceNum=%1&serviceId=urn:upnp-org:serviceId:SwitchPower1&action=SetTarget&newTargetValue=%2"
+		},
+		"name": "WK_AV_AlwaysOn",
+		"room": "5eac18017aab7f29e4b4deac"
+	},
+	{
+		"behavior": "power_meter",
+		"vera": {
+			"device_id": "56"
+		},
+		"name": "MK_Smartmeter ImportT1",
+		"room": "5eac18017aab7f29e4b4deac"
+	},
+	{
+		"behavior": "power_meter",
+		"vera": {
+			"device_id": "57"
+		},
+		"name": "MK_Smartmeter ImportT2",
+		"room": "5eac18017aab7f29e4b4deac"
+	},
+	{
+		"behavior": "power_meter",
+		"vera": {
+			"device_id": "58"
+		},
+		"name": "MK_Smartmeter ExportT1",
+		"room": "5eac18017aab7f29e4b4deac"
+	},
+	{
+		"behavior": "power_meter",
+		"vera": {
+			"device_id": "59"
+		},
+		"name": "MK_Smartmeter ExportT2",
+		"room": "5eac18017aab7f29e4b4deac"
+	},
+	]
+}

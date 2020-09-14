@@ -1,0 +1,40 @@
+{
+	"_comment": [ "VeraBridge, reneboer 2020-09-13" ],
+	"_comment": [ "id must match plugin path for it to load, gateway name must match for core.get_gateway() to work." ],
+	"id": "VeraBridge",
+	"version": "1.0",
+	"type": "gateway",
+	"dependencies": {
+		"firmware": "1.0",
+		"addons": [{
+			"id": "lua",
+			"version": "1.0"
+		}]
+	},
+	"permissions": ["core", "storage", "timer", "http", "debug"],
+	"startup": "scripts/startup",
+	"teardown": "scripts/teardown",
+  "gateway": {
+    "name": "VeraBridge",
+    "label": "Vera Bridge",
+    "reason": "Start bus",
+		"unreachableReasons": [
+			{ 
+				"reason": "1. No reason",
+				"advice": "Do nothing"
+			}
+		],
+		"unreachableActions": [
+			{ 
+				"label": "Do nothing",
+				"method": "do_nothing"
+			}
+		],
+		"forceRemoveDeviceCommand":"HUB:VeraBridge/scripts/delete_device",
+		"setItemValueCommand": "HUB:VeraBridge/scripts/set_item_value",
+		"addItemDictionaryValueCommand": "",
+		"setItemDictionaryValueCommand": "",
+		"removeItemDictionaryValueCommand": "",
+		"operations": []
+  }
+}
