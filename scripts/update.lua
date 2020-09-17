@@ -106,6 +106,11 @@ end
 local function vb_http_event(event)
 	local ed = event.data
 	local vera_name = ed.user_data
+	local dv = storage.get_string("VB_DV_"..vera_name) or "0"
+	if dv == "-1" then
+		logger.info("Instructed %1 to stop polling.", vera_name)
+		return
+	end
 	if event.event == "http_data_send" then
 		logger.info("I have nothing to send??")
 	elseif event.event == "http_data_received" then
@@ -127,20 +132,15 @@ local function vb_http_event(event)
 --			logger.debug("http event %1", event)
 			logger.info("Connection to %1 closed. Reason %2", vera_name, ed.reason)
 		end
-		local dv = storage.get_string("VB_DV_"..vera_name) or "0"
-		if dv ~= "-1" then
-			-- Start new timer for next poll
-			local timer_id = "VB_TimerId_" .. vera_name
-			if timer.exists(timer_id) then
-				-- Avoid multiple timers for single Vera. Can happen when there are timeouts.
-				logger.warn("Timer for Vera %1 is already in progress.", vera_name)
-			else
-				local timer_sec = 5
-				logger.debug("Setting timer for %1 to poll in %2 sec.", vera_name, timer_sec)
-				timer.set_timeout_with_id(timer_sec * 1000, timer_id, "HUB:"..PLUGIN.."/scripts/poll", {name = vera_name})
-			end
+		-- Start new timer for next poll
+		local timer_id = "VB_TimerId_" .. vera_name
+		if timer.exists(timer_id) then
+			-- Avoid multiple timers for single Vera. Can happen when there are timeouts.
+			logger.warn("Timer for Vera %1 is already in progress.", vera_name)
 		else
-			logger.info("Instructed %1 to stop polling.", vera_name)
+			local timer_sec = 5
+			logger.debug("Setting timer for %1 to poll in %2 sec.", vera_name, timer_sec)
+			timer.set_timeout_with_id(timer_sec * 1000, timer_id, "HUB:"..PLUGIN.."/scripts/poll", {name = vera_name})
 		end
 	else
 		logger.err("unexpected event type %1", event.event)
