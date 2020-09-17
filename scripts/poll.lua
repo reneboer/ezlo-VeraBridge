@@ -27,10 +27,10 @@ local function vb_poll(args)
 				logger.err("Unsupported hub type %1. Expect Vera or openLuup.", vera.type)
 				return
 			end	
-			logger.debug("Created Vera URL: %1", veraURI)
+			logger.debug("Vera %1 Poll URL: %2", vera_name, veraURI)
 			http.request { url = veraURI, handler = "HUB:"..PLUGIN.."/scripts/update", user_data = vera_name}
 		else
-			logger.info("Instructed to stop polling.")
+			logger.info("Instructed %1 to stop polling.", vera_name)
 		end
 	else
 		logger.err("No device configurations known.")

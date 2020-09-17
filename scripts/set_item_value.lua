@@ -21,6 +21,21 @@ local function vb_set_item(item_id, value)
 	local core = require("core")
 	local http = require("http")
 	local item = core.get_item(item_id)
+	local curVal = item.value
+	if type(curVal) == "table" then
+		if curVal.value == value.value then
+			curVal = nil
+		end
+	else
+		if curVal == value then
+			curVal = nil
+		end
+	end
+	core.update_item_value(item_id, value or false)
+	if curVal == nil then
+		logger.debug("Items current value %1 is same as new value %2.", item.value, value)
+		return
+	end
 	local vera = storage.get_table("VB_D_"..item.device_id)
 	local cnfg = nil
 	if vera then
@@ -53,12 +68,11 @@ local function vb_set_item(item_id, value)
 			logger.err("Unsupported hub type %1. Expect Vera or openLuup.", config.type)
 			return
 		end	
-		logger.debug("Created Vera URL: %1", veraURI)
-		http.request { url = veraURI, handler = "HUB:"..PLUGIN.."/scripts/gen_http_handler", user_data = vera.name }
+		logger.debug("Vera %1 Action URL: %2", vera.name, veraURI)
+		http.request { url = veraURI, handler = "HUB:"..PLUGIN.."/scripts/action_handler", user_data = vera.name }
 	else
 		logger.debug("Item %1 for device %2 is not mapped to a Vera device", item_id, item.deviceId)
 	end
-	core.update_item_value(item_id, value or false)
 end
 
 local function vb_set_items(params)

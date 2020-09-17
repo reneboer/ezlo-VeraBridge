@@ -11,13 +11,135 @@ local core = require("core")
 local timer = require("timer")
 local logger = require("HUB:"..PLUGIN.."/scripts/utils/log").setPrefix(PLUGIN.."/scripts/startup").setLevel(storage.get_number("log_level") or 99)
 
+-- Map behavior to device specifics.
+-- Keep in sync with ItemMapping table in update.lua
+local DeviceMap = {
+	["dimmer"] = { 
+		type = "dimmer.outlet", 
+		category = "dimmable_light", 
+		subcategory = "dimmable_plugged",
+		items = { "switch", "dimmer", "dimmer_up", "dimmer_down", "dimmer_stop", "electric_meter_watt", "electric_meter_kwh" }
+	},	
+	["switch"] = { 
+		type = "switch.outlet", 
+		category = "switch", 
+		subcategory = "interior_plugin",
+		items = { "switch", "electric_meter_watt", "electric_meter_kwh" }
+	},	
+	["power_meter"] = { 
+		type = "meter.power", 
+		category = "power_meter", 
+		subcategory = "",
+		items = { "electric_meter_watt", "electric_meter_kwh", "electric_meter_amper", "electric_meter_volt" }
+	},	
+	["co_sensor"] = { 
+		type = "sensor", 
+		category = "security_sensor", 
+		subcategory = "co",
+		items = { "co_alarm" }
+	},	
+	["co2_sensor"] = { 
+		type = "sensor", 
+		category = "security_sensor", 
+		subcategory = "co2",
+		items = { "co2_alarm" }
+	},	
+	["dw_sensor"] = { 
+		type = "sensor", 
+		category = "security_sensor", 
+		subcategory = "door",
+		items = { "dw_state" }
+	},	
+	["gas_sensor"] = { 
+		type = "sensor", 
+		category = "security_sensor", 
+		subcategory = "gas",
+		items = { "gas_alarm" }
+	},	
+	["glass_sensor"] = { 
+		type = "sensor", 
+		category = "security_sensor", 
+		subcategory = "glass",
+		items = { "glass_breakage_alarm" }
+	},	
+	["humidity_sensor"] = { 
+		type = "sensor", 
+		category = "humidity", 
+		subcategory = "",
+		items = { "humidity" }
+	},	
+	["leak_sensor"] = { 
+		type = "sensor", 
+		category = "security_sensor", 
+		subcategory = "leak",
+		items = { "water_leak_alarm" }
+	},	
+	["light_sensor"] = { 
+		type = "sensor", 
+		category = "light_sensor", 
+		subcategory = "",
+		items = { "illuminance" }
+	},	
+	["motion_sensor"] = { 
+		type = "sensor", 
+		category = "security.motion", 
+		subcategory = "motion",
+		items = { "motion" }
+	},	
+	["smoke_sensor"] = { 
+		type = "sensor", 
+		category = "security_sensor", 
+		subcategory = "smoke",
+		items = { "smoke_alarm" }
+	},	
+	["temperature_sensor"] = { 
+		type = "sensor", 
+		category = "temperature", 
+		subcategory = "",
+		items = { "temp" }
+	},	
+	["uv_sensor"] = { 
+		type = "sensor", 
+		category = "uv_sensor", 
+		subcategory = "",
+		items = { "ultraviolet" }
+	}
+}
+
+-- Define item details
+-- Should match firmware\plugins\zwave\scripts\model\items\default as much as possible.
+local ItemDetails = {
+	battery = { default = 0 }, 
+	switch = { default = false }, 
+	dimmer = { default = 0 }, 
+	dimmer_up = { },
+	dimmer_down = { },
+	dimmer_stop = { },
+	electric_meter_watt = { default = { value = 0, scale = "watt" }}, 
+	electric_meter_kwh = { default = { value = 0, scale = "kilo_watt_hour" }},
+	electric_meter_amper = { default = { value = 0, scale = "ampere" }},
+	electric_meter_volt = { default = { value = 0, scale = "volt" }},
+	co_alarm = { default = "unknown", enum= { "no_co", "co_detected", "unknown" }},
+	co2_alarm ={ default = "unknown", enum= { "no_co2", "co2_detected", "unknown" }},
+	dw_state = { default = "unknown", enum= { "dw_is_opened", "dw_is_closed", "unknown" }},
+	gas_alarm = { default = "unknown", enum= { "no_gas", "combustible_gas_detected", "unknown" }},
+	glass_breakage_alarm = { default = "unknown", enum = { "no_glass_breakage", "glass_breakage", "unknown" }},
+	humidity= { default = { value = 0, scale = "percent" }},
+	water_leak_alarm = { default = "unknown", enum = {"no_water_leak", "water_leak_detected", "unknown" }},
+	illuminance = { default = { value = 0, scale = "percent" }},
+	motion = { default = false },
+	smoke_alarm = { default = "unknown", enum = { "no_smoke", "smoke_detected", "unknown" }},
+	temp = { default = { value = 0, scale = "celsius" }},
+	ultraviolet = { default = { value = 0, scale = "uv_index" }}
+}
+
 
 -- First run of plugin, do set-ups needed
 local function set_configuration(config)
 	-- Start with setting the log level.
 	logger.setLevel(config.log_level or 99)
 	logger.debug("set_configuration.config=%1", config)
-	if storage.get_string("PLUGIN") == nil then
+	if not storage.exists("PLUGIN") then
 		-- First run, create storage objects we needed. Currently these values are not shown in UI.
 		storage.set_string("PLUGIN", PLUGIN)
 	end
@@ -37,57 +159,124 @@ local function set_configuration(config)
 		vc.type = vera.type
 		vc.ip = vera.ip
 		storage.set_table("VB_config_"..vera.name, vc)
+		storage.set_number("VB_RC_"..vera.name, 0)
 		table.insert(vera_names, vera.name)
 	end
+	storage.set_number("max_retry_count", 5)
 	storage.set_number("log_level", config.log_level)
 	storage.set_table("VB_veras", vera_names)
 end
 
+-- Create a new device
+local function add_device(behavior, gw, name, room, battery_powered, vera_name, vera_id)
+	local cnfg = {}
+	local room_id = room
+--	if room and room ~= "" then
+--		room_id = loadfile("HUB:"..PLUGIN.."/scripts/utils/get_config")().get(room)
+--	end
+	
+	-- Find behavior details
+	local map = DeviceMap[behavior]
+	if not map then
+		return nil, "unsupported behavior "..(behavior or "nil")
+	end
+	
+	local newdev,err = core.add_device({
+			gateway_id = gw,
+			type = map.type,
+			device_type_id = "VeraBridge_"..behavior,
+			name = name,
+			room_id = room_id,
+			category = map.category,
+			subcategory = map.subcategory,
+			battery_powered = battery_powered,
+			info = {manufacturer = "Rene Boer", model = "VeraBridge", remote_device = vera_name.."_"..vera_id}
+		})
+	if newdev then
+		cnfg.behavior = behavior
+		cnfg.deviceId = newdev
+		cnfg.name = name
+		cnfg.vera_name = vera_name
+		-- Add battery item if user wants it.
+		if battery_powered then 
+			table.insert(map.items, 1, "battery")
+		else
+			if map.items[1] == "battery" then
+				table.remove(map.items, 1)
+			end
+		end
+		for _, item in pairs(map.items) do
+			local id = ItemDetails[item]
+			if id then
+				local base_item = require("HUB:zwave/scripts/model/items/default/"..item)
+				if base_item then
+					base_item.device_id = newdev
+					if id.default then base_item.value = id.default end
+					if id.enum then base_item.enum = id.enum end
+					local it, err = core.add_item(base_item)
+					if it then
+						-- We have getter, so capture item id for it to handle updates from Vera.
+						if base_item.has_getter then cnfg[item.."_id"] = it	end
+					else
+						logger.err("failed to add item %1 to device %2", item, newdev)
+					end
+				else
+					logger.warn("cannot load zwave/scripts/model/items/default/%1", item)
+				end
+			else
+				logger.warn("cannot map %1, check ItemDetails.", item)
+			end
+		end
+		return cnfg
+	else
+		return nil,err
+	end
+end
+
+-- Create the devices as found in the VeraBridge.json
 local function create_devices(veras)
 	logger.debug("create_devices.veras=%1", veras)
 
 	-- Loop over devices and see what we need to create, update
 	local gateway = core.get_gateway()
 	local veras = veras or {}
+	local device_adder = loadfile("HUB:"..PLUGIN.."/scripts/add_device")
+	local devices = {}
+
 	for _,vera in ipairs(veras) do
 		for _,d in ipairs(vera.devices) do
 			local id = math.floor(d.device_id)
-			local cnfg = storage.get_table("VB_DC_"..vera.name..id)
-			-- Do we have an existing device?
-			if cnfg == nil then
-				-- Create new device for behavior
-				local adder = loadfile( "HUB:"..PLUGIN.."/scripts/devices/"..d.behavior.."_add" )
-				if adder then
+			if id > 0 then
+				local cnfg = storage.get_table("VB_DC_"..vera.name..id)
+				-- Do we have an existing device?
+				if cnfg == nil then
 					logger.notice("Creating new device %1 for %2.", d.name, vera.name)
-					cnfg, err = adder(gateway.id, d.name, d.room_id, vera.name..id, d.meters)
+					cnfg, err = add_device(d.behavior, gateway.id, d.name, d.room_id, d.battery_powered or false, vera.name, id, d.meters)
 					if cnfg then
 						storage.set_table("VB_D_"..cnfg.deviceId, {name = vera.name, device_id = id} )
+						storage.set_table("VB_DC_"..vera.name..id, cnfg)
 						-- Device is ready to go.
 						core.update_reachable_state(cnfg.deviceId, true)
 						core.update_ready_state(cnfg.deviceId, true)
 					else
 						-- Failure delete device from storage
-						storage.delete("VB_DC_"..vera.name..id)
 						logger.err("Unable to create device %1, error %2", id, err)
 					end	
 				else
-					logger.warn("No device definition found for behavior %1. Device %2 for %3 not created.", d.behavior, id, vera.name)
+					logger.debug("Device %1 for %2 exists.", id, vera.name)
 				end
+				if cnfg then devices[cnfg.deviceId] = true end
 			else
-				logger.debug("Device %1 for %2 exists.", id, vera.name)
-			end
-			if cnfg then
-				cnfg.behavior = d.behavior
-				cnfg.vera_name = vera.name
-				cnfg.name = d.name
-				storage.set_table("VB_DC_"..vera.name..id, cnfg)
+				logger.debug("Device %1 for %2 is set to ignore.", id, vera.name)
 			end
 		end
 	end
+	return devices
 end
 
 -- See if we have any obsolete devices no longer mapped. If so remove and clean up.
-local function 	cleanup_devices()
+-- Should all be nicely handled by code, but who knows.
+local function 	cleanup_devices(active_devices)
 	-- Find the devices for this gateway. Check  
 	local gateway = core.get_gateway()
 	local self_id = gateway.id
@@ -109,7 +298,7 @@ local function 	cleanup_devices()
 		if vera then
 			cnfg = storage.get_table("VB_DC_"..vera.name..math.floor(vera.device_id))
 		end
-		if cnfg then
+		if cnfg and active_devices[id] then
 			logger.debug("Keep device %1, %2", id, cnfg.name)
 		else
 			logger.debug("Remove device %1, no known mapping", id)
@@ -175,10 +364,10 @@ local function startup(startup_args)
 	set_configuration(config)
 
 	-- Add Vera Virtual devices
-	create_devices(config.veras)
+	local devices = create_devices(config.veras)
 	
 	-- Remove any devices we no longer know.
-	cleanup_devices()
+	cleanup_devices(devices)
 
 	-- Kick off polling all Veras.
 	start_polling(config.veras)
