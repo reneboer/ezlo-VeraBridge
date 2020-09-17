@@ -82,7 +82,7 @@ local DeviceMap = {
 	},	
 	["motion_sensor"] = { 
 		type = "sensor", 
-		category = "security.motion", 
+		category = "security_sensor", 
 		subcategory = "motion",
 		items = { "motion" }
 	},	
