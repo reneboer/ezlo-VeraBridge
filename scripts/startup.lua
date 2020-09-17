@@ -244,6 +244,7 @@ local function create_devices(veras)
 	local devices = {}
 
 	for _,vera in ipairs(veras) do
+		local device_count = 0
 		for _,d in ipairs(vera.devices) do
 			local id = math.floor(d.device_id)
 			if id > 0 then
@@ -265,11 +266,17 @@ local function create_devices(veras)
 				else
 					logger.debug("Device %1 for %2 exists.", id, vera.name)
 				end
-				if cnfg then devices[cnfg.deviceId] = true end
+				if cnfg then 
+					devices[cnfg.deviceId] = true 
+					device_count = device_count + 1
+				end
 			else
 				logger.debug("Device %1 for %2 is set to ignore.", id, vera.name)
 			end
 		end
+		local vc = storage.get_table("VB_config_"..vera.name)
+		vc.device_count = device_count
+		storage.set_table("VB_config_"..vera.name, vc)
 	end
 	return devices
 end
@@ -312,18 +319,24 @@ local function 	cleanup_devices(active_devices)
 end
 
 -- Kick off polling for all Vera.
-local function start_polling(veras)
-	local veras = veras or {}
+local function start_polling()
+	local veras = storage.get_table("VB_veras")
 	local cnt = 1
 	for _,vera in ipairs(veras) do
-		-- At startup pull all data from Vera
-		storage.set_string("VB_DV_"..vera.name,"0")
+		local vc = storage.get_table("VB_config_"..vera)
+		if vc.device_count ~= 0 then
 
-		-- Start polling timer
-		local int = 10 + 5 * cnt
-		cnt = cnt + 1
-		logger.debug("Setting timer for %1 to poll in %2 sec.", vera.name, int)
-		timer.set_timeout(int*1000, "HUB:"..PLUGIN.."/scripts/poll", { name = vera.name })
+			-- At startup pull all data from Vera
+			storage.set_string("VB_DV_"..vera,"0")
+
+			-- Start polling timer
+			local int = 10 + 5 * cnt
+			cnt = cnt + 1
+			logger.debug("Setting timer for %1 to poll in %2 sec.", vera, int)
+			timer.set_timeout(int*1000, "HUB:"..PLUGIN.."/scripts/poll", { name = vera })
+		else
+			logger.info("No active devices found for %1, not polling.", vera)
+		end
 	end	
 end
 
@@ -370,7 +383,7 @@ local function startup(startup_args)
 	cleanup_devices(devices)
 
 	-- Kick off polling all Veras.
-	start_polling(config.veras)
+	start_polling()
 
 	-- some clean up options. used as needed.
 end
