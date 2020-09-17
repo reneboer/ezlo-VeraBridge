@@ -1,8 +1,8 @@
 {
-	"version": "1.0",
+	"version": "2.0",
 	"meta": "Mapping for two veras, plus and Edge",
-	"instructions": "You must specify a name for each Vera/openLuup that is unique and without spaces or special characters.",
-	"behaviours_supported": { "temperature_sensor", "dimmer", "switch", "power_meter" },
+	"instructions": "You must specify a name for each Vera/openLuup that is unique and without spaces or special characters. Use negative device_id to keep but ignore",
+	"behaviours_supported": { "dw_sensor", "motion_sensor", "co_sensor", "co2_sensor", "glass_sensor", "leak_sensor", "light_sensor", "humidity_sensor", "temperature_sensor", "uv_sensor", "dimmer", "switch", "power_meter" },
 	"log_level": 5,
 	"veras": [{
 		"name": "Edge",
@@ -10,21 +10,19 @@
 		"ip": "192.168.178.106",
 		"devices": [{
 			"behavior": "dimmer",
-			"meters": true,
 			"device_id": 16,
 			"name": "SK_Licht",
 			"room": "Slaapkamer",
 			"room_id": "5f5b7e0c124c4110b0d07153"
 		},{
 			"behavior": "temperature_sensor",
-			"meters": true,
 			"device_id": 67,
 			"name": "SK_Temperature",
 			"room": "Slaapkamer",
 			"room_id": "5f5b7e0c124c4110b0d07153"
 		},{
 			"behavior": "motion_sensor",
-			"meters": true,
+			"battery_powered": true,
 			"device_id": 66,
 			"name": "SK_Motion",
 			"room": "Slaapkamer",
@@ -36,39 +34,37 @@
 		"ip": "192.168.178.105",
 		"devices": [{
 			"behavior": "dimmer",
-			"meters": true,
 			"device_id": 65,
 			"name": "SK_OverloopLicht",
 			"room": "Slaapkamer",
 			"room_id": "5f5b7e0c124c4110b0d07153"
 		},{
 			"behavior": "switch",
-			"meters": true,
 			"device_id": 27,
 			"name": "WK_AV_AlwaysOn",
 			"room": "",
 			"room_id": ""
 		},{
 			"behavior": "power_meter",
-			"device_id": 56,
+			"device_id": -56,
 			"name": "MK_Smartmeter ImportT1",
 			"room": "",
 			"room_id": ""
 		},{
 			"behavior": "power_meter",
-			"device_id": 57,
+			"device_id": -57,
 			"name": "MK_Smartmeter ImportT2",
 			"room": "",
 			"room_id": ""
 		},{
 			"behavior": "power_meter",
-			"device_id": 58,
+			"device_id": -58,
 			"name": "MK_Smartmeter ExportT1",
 			"room": "",
 			"room_id": ""
 		},{
 			"behavior": "power_meter",
-			"device_id": 59,
+			"device_id": -59,
 			"name": "MK_Smartmeter ExportT2",
 			"room": "",
 			"room_id": ""

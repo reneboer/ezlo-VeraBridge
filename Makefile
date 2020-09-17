@@ -11,7 +11,6 @@ mkdir:
 comp:
 	luac -p scripts/*.lua
 	luac -p scripts/utils/*.lua
-	luac -p scripts/devices/*.lua
 
 # Rule to stop the plugin and copy the code to the LinuxEdge
 copy: 
@@ -29,5 +28,13 @@ reg:
 uninstall: 
 	ssh -i ~/.ssh/ezlo_edge root@$(IP) /opt/firmware/bin/ha-infocmd hub.extensions.custom_plugin.uninstall $(PID)
 
+# restart all deaomns
+restart_all: 
+	ssh -i ~/.ssh/ezlo_edge root@$(IP) /etc/init.d/firmware  restart
+
+# Restart lua deamon
+restart: 
+	ssh -i ~/.ssh/ezlo_edge root@$(IP) /etc/init.d/ha-luad  restart
+	
 # Rule to send code up and restart the plugin
 all: comp unreg copy reg
