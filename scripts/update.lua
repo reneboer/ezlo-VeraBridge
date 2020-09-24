@@ -138,7 +138,7 @@ local function vb_http_event(event)
 			-- Avoid multiple timers for single Vera. Can happen when there are timeouts.
 			logger.warn("Timer for Vera %1 is already in progress.", vera_name)
 		else
-			local timer_sec = 10
+			local timer_sec = 5
 			logger.debug("Setting timer for %1 to poll in %2 sec.", vera_name, timer_sec)
 			timer.set_timeout_with_id(timer_sec * 1000, timer_id, "HUB:"..PLUGIN.."/scripts/poll", {name = vera_name})
 		end

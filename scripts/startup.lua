@@ -2,7 +2,7 @@
 	Vera device Bridge plugin for Ezo Linux based hubs
 	
 	File	: startup.lua
-	Version	: 0.1
+	Version	: 1.0
 	Author	: Rene Boer
 --]]
 local PLUGIN = "VeraBridge"
@@ -78,7 +78,7 @@ local DeviceMap = {
 		type = "sensor", 
 		category = "light_sensor", 
 		subcategory = "",
-		items = { "illuminance" }
+		items = { "lux" }
 	},	
 	["motion_sensor"] = { 
 		type = "sensor", 
@@ -109,28 +109,149 @@ local DeviceMap = {
 -- Define item details
 -- Should match firmware\plugins\zwave\scripts\model\items\default as much as possible.
 local ItemDetails = {
-	battery = { default = 0 }, 
-	switch = { default = false }, 
-	dimmer = { default = 0 }, 
-	dimmer_up = { },
-	dimmer_down = { },
-	dimmer_stop = { },
-	electric_meter_watt = { default = { value = 0, scale = "watt" }}, 
-	electric_meter_kwh = { default = { value = 0, scale = "kilo_watt_hour" }},
-	electric_meter_amper = { default = { value = 0, scale = "ampere" }},
-	electric_meter_volt = { default = { value = 0, scale = "volt" }},
-	co_alarm = { default = "unknown", enum= { "no_co", "co_detected", "unknown" }},
-	co2_alarm ={ default = "unknown", enum= { "no_co2", "co2_detected", "unknown" }},
-	dw_state = { default = "unknown", enum= { "dw_is_opened", "dw_is_closed", "unknown" }},
-	gas_alarm = { default = "unknown", enum= { "no_gas", "combustible_gas_detected", "unknown" }},
-	glass_breakage_alarm = { default = "unknown", enum = { "no_glass_breakage", "glass_breakage", "unknown" }},
-	humidity= { default = { value = 0, scale = "percent" }},
-	water_leak_alarm = { default = "unknown", enum = {"no_water_leak", "water_leak_detected", "unknown" }},
-	illuminance = { default = { value = 0, scale = "percent" }},
-	motion = { default = false },
-	smoke_alarm = { default = "unknown", enum = { "no_smoke", "smoke_detected", "unknown" }},
-	temp = { default = { value = 0, scale = "celsius" }},
-	ultraviolet = { default = { value = 0, scale = "uv_index" }}
+	battery = { 
+		value_type = "int", 
+		value = 100, 
+		has_getter = true, 
+		has_setter = false
+	}, 
+	switch = {
+		value_type = "bool", 
+		value = false, 
+		has_getter = true, 
+		has_setter = true
+	}, 
+	dimmer = {
+		value_type = "int", 
+		has_getter = true, 
+		has_setter = true, 
+		value = 0, 
+		value_min = 0, 
+		value_max = 100
+	}, 
+	dimmer_up = { 
+		value_type = "int", 
+		value = 0, 
+		has_getter = false, 
+		has_setter = true
+	},
+	dimmer_down = {
+		value_type = "int", 
+		value = 0, 
+		has_getter = false, 
+		has_setter = true
+	},
+	dimmer_stop = { 
+		value_type = "int", 
+		value = 0, 
+		has_getter = false, 
+		has_setter = true
+	},
+	electric_meter_watt = { 
+		value_type = "power", 
+		value = {value = 0, scale = "watt"}, 
+		has_getter = true,
+		has_setter = false
+	}, 
+	electric_meter_kwh = { 
+		value_type = "amount_of_useful_energy", 
+		value = {value = 0, scale = "kilo_watt_hour"}, 
+		has_getter = true, 
+		has_setter = false
+	},
+	electric_meter_amper = {
+		value_type = "electric_current", 
+		value = {value = 0, scale = "ampere"}, 
+		has_getter = true, 
+		has_setter = false
+	},
+	electric_meter_volt = { 
+		value_type = "electric_potential", 
+		value = {value = 0, scale = "volt"}, 
+		has_getter = true, 
+		has_setter = false
+	},
+	co_alarm = { 
+		value_type = "token",
+		value = "unknown", 
+		enum= { "no_co", "co_detected", "unknown" },
+		has_getter = true, 
+		has_setter = false
+	},
+	co2_alarm = { 
+		value_type = "token",
+		value = "unknown", 
+		enum= { "no_co2", "co2_detected", "unknown" },
+		has_getter = true, 
+		has_setter = false
+	},
+	dw_state = { 
+		value_type = "token",
+		value = "unknown", 
+		enum= { "dw_is_opened", "dw_is_closed", "unknown" },
+		has_getter = true, 
+		has_setter = false
+	},
+	gas_alarm = { 
+		value_type = "token",
+		value = "unknown", 
+		enum= { "no_gas", "combustible_gas_detected", "unknown" },
+		has_getter = true, 
+		has_setter = false
+	},
+	glass_breakage_alarm = { 
+		value_type = "token",
+		value = "unknown", 
+		enum= { "no_glass_breakage", "glass_breakage", "unknown" },
+		has_getter = true, 
+		has_setter = false
+	},
+	humidity= { 
+		value_type = "humidity",
+		value = {value = 0, scale = "percent"},
+		has_getter = true,
+		has_setter = false
+	},
+	water_leak_alarm = { 
+		value_type = "token",
+		value = "unknown", 
+		enum= { "no_water_leak", "water_leak_detected", "unknown" },
+		has_getter = true, 
+		has_setter = false
+	},
+	lux = {  
+		value_type = "illuminance",
+		value = {value = 0, scale = "percent"},
+		has_getter = true,
+		has_setter = false
+	},
+	motion = { 
+		value_type = "bool",
+		value = false,
+		has_getter = true,
+		has_setter = false
+	},
+	smoke_alarm = { 
+		value_type = "token",
+		value = "unknown", 
+		enum= { "no_smoke", "smoke_detected", "unknown" },
+		has_getter = true, 
+		has_setter = false
+	},
+	temp = { 
+		value_type = "temperature",
+		value = {value = 0, scale = "celsius"},
+		value_min = {value = -85, scale = "celsius"},
+		value_max = {value = 100, scale = "celsius"},
+		has_getter = true,
+		has_setter = false
+	},
+	ultraviolet = { 
+		value_type = "ultraviolet",
+		value = {value = 0, scale = "uv_index"},
+		has_getter = true,
+		has_setter = false
+	}
 }
 
 
@@ -206,22 +327,18 @@ local function add_device(behavior, gw, name, room, battery_powered, vera_name, 
 			end
 		end
 		for _, item in pairs(map.items) do
-			local id = ItemDetails[item]
-			if id then
-				local base_item = require("HUB:zwave/scripts/model/items/default/"..item)
-				if base_item then
-					base_item.device_id = newdev
-					if id.default then base_item.value = id.default end
-					if id.enum then base_item.enum = id.enum end
-					local it, err = core.add_item(base_item)
-					if it then
-						-- We have getter, so capture item id for it to handle updates from Vera.
-						if base_item.has_getter then cnfg[item.."_id"] = it	end
-					else
-						logger.err("failed to add item %1 to device %2", item, newdev)
-					end
+			local base_item = ItemDetails[item]
+			if base_item then
+				base_item.name = item
+				base_item.device_id = newdev
+--					if id.default then base_item.value = id.default end
+--					if id.enum then base_item.enum = id.enum end
+				local it, err = core.add_item(base_item)
+				if it then
+					-- We have getter, so capture item id for it to handle updates from Vera.
+					if base_item.has_getter then cnfg[item.."_id"] = it	end
 				else
-					logger.warn("cannot load zwave/scripts/model/items/default/%1", item)
+					logger.err("failed to add item %1 to device %2", item, newdev)
 				end
 			else
 				logger.warn("cannot map %1, check ItemDetails.", item)
@@ -240,7 +357,6 @@ local function create_devices(veras)
 	-- Loop over devices and see what we need to create, update
 	local gateway = core.get_gateway()
 	local veras = veras or {}
-	local device_adder = loadfile("HUB:"..PLUGIN.."/scripts/add_device")
 	local devices = {}
 
 	for _,vera in ipairs(veras) do

@@ -91,5 +91,4 @@ local function vb_set_items(params)
 	end
 end
 
-pcall(vb_set_items,...)
-return true
+vb_set_items(...)
