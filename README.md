@@ -43,6 +43,7 @@ For full reset of plugin so we can start over. All mapped devices will be remove
  "id": "12345",
  "params": { "script": "HUB:VeraBridge/scripts/reset_plugin" }
 }
+
 Last run the uninstall on the hub.
 > /opt/firmware/bin/ha-infocmd hub.extensions.custom_plugin.uninstall VeraBridge
 
