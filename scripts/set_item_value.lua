@@ -57,6 +57,8 @@ local function vb_set_item(item_id, value)
 		-- For Dimmer device, we may get a switch command. Convert true/false to load level
 		if cnfg.behavior == "dimmer" and type(newVal) == "boolean" then
 			newVal = newVal and 100 or 0
+		elseif cnfg.behavior == "switch" and type(newVal) == "boolean" then
+			newVal = newVal and 1 or 0
 		end
 		local config = storage.get_table("VB_config_"..vera.name)
 		veraURI = string_parameters(veraURI, math.floor(vera.device_id), newVal)
