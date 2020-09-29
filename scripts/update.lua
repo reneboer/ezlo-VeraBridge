@@ -115,21 +115,53 @@ local function vb_http_event(event)
 		logger.info("I have nothing to send??")
 	elseif event.event == "http_data_received" then
 		if ed.code == 200 then
-			local json = require("HUB:"..PLUGIN.."/scripts/utils/dkjson")
-			local js_resp = json.decode(ed.data)
-			if type(js_resp) == "table" then
-				logger.debug("Received %1 DataVersion %2", vera_name, js_resp.DataVersion or "0")
-				storage.set_string("VB_DV_"..vera_name, js_resp.DataVersion or "0")
-				update_bridged_devices(vera_name, js_resp)
+			if ed.last then
+				local tfn = storage.get_string("VB_tempStore_"..vera_name)
+				local data = nil
+				if tfn then
+					-- Read file contents, and append this chunk
+					local f = io.open(tfn, "r")
+					local chunk = f:read("*a")
+					f:close()
+					data = chunk .. ed.data
+					storage.delete("VB_tempStore_"..vera_name)
+					os.remove(tfn)
+					logger.debug("Received all chunks of data, use file %1 and this for processing.", tfn)
+				else
+					-- We have just one chunk.
+					data = ed.data
+				end
+			
+				local json = require("HUB:"..PLUGIN.."/scripts/utils/dkjson")
+				local js_resp = json.decode(data)
+				if type(js_resp) == "table" then
+					logger.debug("Received %1 DataVersion %2", vera_name, js_resp.DataVersion or "0")
+					storage.set_string("VB_DV_"..vera_name, js_resp.DataVersion or "0")
+					update_bridged_devices(vera_name, js_resp)
+				else
+					logger.warn("Unexpected body data type received from %1: %4", vera_name, type(js_resp))
+				end
 			else
-				logger.warn("Unexpected body data type received from %1: %4", vera_name, type(js_resp))
+				-- We got a fraction of the data, write to file.
+				local tfn = storage.get_string("VB_tempStore_"..vera_name)
+				if not tfn then
+					-- Make filename and store
+					tfn = "/tmp/VB_tempStore_"..vera_name..".json"
+					storage.set_string("VB_tempStore_"..vera_name, tfn)
+					logger.debug("Received first chunk of data, create file %1 for later processing.", tfn)
+				else
+					logger.debug("Received a next chunk of data, append to file %1 for later processing.", tfn)
+				end
+				local f = io.open(tfn, "a")
+				f:write(ed.data)
+				f:close()
 			end
 		else
 			logger.err("We got data, but not what we expected :-). HTTP return code %1", ed.code)
 		end
 	elseif event.event == "http_connection_closed" then
+		-- logger.debug("http_connection_closed event %1", event)
 		if ed.reason.code ~= 0 then
---			logger.debug("http event %1", event)
 			logger.info("Connection to %1 closed. Reason %2", vera_name, ed.reason)
 		end
 		-- Start new timer for next poll

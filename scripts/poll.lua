@@ -10,6 +10,10 @@ local function vb_poll(args)
 	local http = require("http")
 
 	-- Must have vera name in arg.
+--
+-- Other logic could be to poll for each device seperately, would mean more devices, slower update. But never a problem with http cache.
+--/data_request?id=status&output_format=json&DeviceNum=20008&DataVersion=865189018
+-- 	
 	local vera_name = args.name
 	-- Fire off the connection to get lu_status2 from Vera
 	local vera = storage.get_table("VB_config_"..vera_name)

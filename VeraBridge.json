@@ -5,6 +5,30 @@
 	"behaviours_supported": { "dw_sensor", "motion_sensor", "co_sensor", "co2_sensor", "glass_sensor", "leak_sensor", "light_sensor", "humidity_sensor", "temperature_sensor", "uv_sensor", "dimmer", "switch", "power_meter" },
 	"log_level": 5,
 	"veras": [{
+		"name": "OpenLuup",
+		"type": "openLuup",
+		"ip": "192.168.178.101",
+		"devices": [{
+			"behavior": "motion_sensor",
+			"device_id": 36,
+			"battery_powered": true,
+			"name": "MK_UPS Sensor",
+			"room": "",
+			"room_id": ""
+		},{
+			"behavior": "switch",
+			"device_id": 20008,
+			"name": "MK_CVPumpBathroom",
+			"room": "",
+			"room_id": ""
+		},{
+			"behavior": "switch",
+			"device_id": 20010,
+			"name": "MK_CVPumpLivingroom",
+			"room": "",
+			"room_id": ""
+		}]
+	},{
 		"name": "Edge",
 		"type": "Vera",
 		"ip": "192.168.178.106",
@@ -40,31 +64,31 @@
 			"room_id": "5f5b7e0c124c4110b0d07153"
 		},{
 			"behavior": "switch",
-			"device_id": 27,
+			"device_id": -27,
 			"name": "WK_AV_AlwaysOn",
 			"room": "",
 			"room_id": ""
 		},{
 			"behavior": "power_meter",
-			"device_id": -56,
+			"device_id": 56,
 			"name": "MK_Smartmeter ImportT1",
 			"room": "",
 			"room_id": ""
 		},{
 			"behavior": "power_meter",
-			"device_id": -57,
+			"device_id": 57,
 			"name": "MK_Smartmeter ImportT2",
 			"room": "",
 			"room_id": ""
 		},{
 			"behavior": "power_meter",
-			"device_id": -58,
+			"device_id": 58,
 			"name": "MK_Smartmeter ExportT1",
 			"room": "",
 			"room_id": ""
 		},{
 			"behavior": "power_meter",
-			"device_id": -59,
+			"device_id": 59,
 			"name": "MK_Smartmeter ExportT2",
 			"room": "",
 			"room_id": ""
