@@ -39,11 +39,8 @@ local ItemMapping = {
 		["CurrentLevel"] = { itemId = "humidity", val_conv = function(val) return {value = val, scale = "percent"} end }
 	},
 	["urn:micasaverde-com:serviceId:LightSensor1"] = {
-		["CurrentLevel"] = { itemId = "illuminance", val_conv = function(val) return {value = val, scale = "percent"} end }
-	},
-	["urn:micasaverde-com:serviceId:LightSensor1"] = {
 		["CurrentLevel"] = { itemIds = {
-			{ itemId = "illuminance", val_conv = function(val) return {value = val, scale = "percent"} end },
+			{ itemId = "lux", val_conv = function(val) return {value = val, scale = "percent"} end },
 			{ itemId = "ultraviolet", val_conv = function(val) return {value = val, scale = "uv_index"} end }
 		}}
 	},
@@ -71,7 +68,15 @@ local function update_bridged_devices(name, vera)
 				if ItemMapping[vs.service] then
 					local vera_var = ItemMapping[vs.service][vs.variable]
 					if vera_var then
-						if vera_var.itemIds then
+						if vera_var.deviceId then
+							-- Is mapping to device attribute
+							local ezlo_id = cnfg[vera_var.deviceId.."_id"]
+							if ezlo_id then
+								local val = tonumber(vs.value)
+								logger.debug("Not supported: To update Ezlo device %1, value %2", ezlo_id, val)
+-- ?? do not know call. is there one??			core.set_armed(ezlo_id, item.val_conv(val))
+							end
+						elseif vera_var.itemIds then
 							-- Can map to multiple Ezlo types
 							for _, item in pairs(vera_var.itemIds) do
 								local ezlo_id = cnfg[item.itemId.."_id"]

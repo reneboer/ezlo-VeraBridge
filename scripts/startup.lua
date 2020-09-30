@@ -2,7 +2,7 @@
 	Vera device Bridge plugin for Ezo Linux based hubs
 	
 	File	: startup.lua
-	Version	: 1.0
+	Version	: 1.2
 	Author	: Rene Boer
 --]]
 local PLUGIN = "VeraBridge"
@@ -254,7 +254,6 @@ local ItemDetails = {
 	}
 }
 
-
 -- First run of plugin, do set-ups needed
 local function set_configuration(config)
 	-- Start with setting the log level.
@@ -446,7 +445,7 @@ local function start_polling()
 			storage.set_string("VB_DV_"..vera,"0")
 
 			-- Start polling timer
-			local int = 10 + 5 * cnt
+			local int = 10 + 3 * cnt
 			cnt = cnt + 1
 			logger.debug("Setting timer for %1 to poll in %2 sec.", vera, int)
 			timer.set_timeout(int*1000, "HUB:"..PLUGIN.."/scripts/poll", { name = vera })
@@ -500,6 +499,11 @@ local function startup(startup_args)
 
 	-- Kick off polling all Veras.
 	start_polling()
+
+	-- Subscribe to device change events.
+	if core.subscribe then
+		core.subscribe("HUB:"..PLUGIN.."/scripts/event_handler", {exclude=false,rules={{event="device_updated"}}})
+	end
 
 	-- some clean up options. used as needed.
 end
