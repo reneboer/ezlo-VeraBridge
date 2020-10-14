@@ -44,22 +44,31 @@ local function vb_set_item(item_id, value)
 	if cnfg then
 		-- We have a mapped Vera device for the item
 		logger.debug("Found device =%1", cnfg)
-		local newVal = value
+		local newVal = nil
 		local veraURI
-		if cnfg.behavior == "dimmer" then
+		if item_id == cnfg.dimmer_id then
 			veraURI = "/data_request?id=lu_action&DeviceNum=%1&serviceId=urn:upnp-org:serviceId:Dimming1&action=SetLoadLevelTarget&newLoadlevelTarget=%2"
-		elseif cnfg.behavior == "switch" then
+			if type(value) == "boolean" then newVal = value and 100 or 0 end
+		elseif item_id == cnfg.switch_id then
+			if type(value) == "boolean" then newVal = value and 1 or 0 end
 			veraURI = "/data_request?id=lu_action&DeviceNum=%1&serviceId=urn:upnp-org:serviceId:SwitchPower1&action=SetTarget&newTargetValue=%2"
-		else
+		elseif item_id == cnfg.rbgcolor_id then
+			newVal = math.floor(value.red)..","..math.floor(value.green)..","..math.floor(value.blue)
+			veraURI = "/data_request?id=lu_action&DeviceNum=%1&serviceId=urn:micasaverde-com:serviceId:Color1&action=SetColorRGB&newColorRGBTarget=%2"
+		elseif cnfg.behaviour == "window_cov" then
+			veraURI = "/data_request?id=lu_action&DeviceNum=%1&serviceId=urn:upnp-org:serviceId:WindowCovering1&action=%2"
+			if item_id == cnfg.dimmer_up_id then
+				newVal = "Up"
+			elseif item_id == cnfg.dimmer_down_id then
+				newVal = "Down"
+			elseif item_id == cnfg.dimmer_stop_id then
+				newVal = "Stop"
+			end
+		else	
 			logger.err("unsupported behavior %1 for lu_action", cnfg.behavior)
 			return
 		end
-		-- For Dimmer device, we may get a switch command. Convert true/false to load level
-		if cnfg.behavior == "dimmer" and type(newVal) == "boolean" then
-			newVal = newVal and 100 or 0
-		elseif cnfg.behavior == "switch" and type(newVal) == "boolean" then
-			newVal = newVal and 1 or 0
-		end
+		if not newVal then newVal = math.floor(value) end
 		local config = storage.get_table("VB_config_"..vera.name)
 		veraURI = string_parameters(veraURI, math.floor(vera.device_id), newVal)
 		if config.type == "Vera" then

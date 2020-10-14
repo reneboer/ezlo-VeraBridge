@@ -11,6 +11,8 @@ local core = require("core")
 local timer = require("timer")
 local logger = require("HUB:"..PLUGIN.."/scripts/utils/log").setPrefix(PLUGIN.."/scripts/startup").setLevel(storage.get_number("log_level") or 99)
 
+local temp_units = "celsius"
+
 -- Map behavior to device specifics.
 -- Keep in sync with ItemMapping table in update.lua
 local DeviceMap = {
@@ -20,11 +22,31 @@ local DeviceMap = {
 		subcategory = "dimmable_plugged",
 		items = { "switch", "dimmer", "dimmer_up", "dimmer_down", "dimmer_stop", "electric_meter_watt", "electric_meter_kwh" }
 	},	
-	["switch"] = { 
+	["dimmer_rgb"] = { 
+		type = "light.bulb", 
+		category = "dimmable_light", 
+		subcategory = "dimmable_colored",
+		items = { "switch", "rgbcolor", "dimmer", "dimmer_up", "dimmer_down", "dimmer_stop", "electric_meter_watt", "electric_meter_kwh" }
+	},	
+	["switch"] = {
 		type = "switch.outlet", 
 		category = "switch", 
 		subcategory = "interior_plugin",
 		items = { "switch", "electric_meter_watt", "electric_meter_kwh" }
+	},	
+	["window_cov"] = {
+		type = "shutter.roller", 
+		category = "window_cov", 
+		subcategory = "window_cov",
+		items = { "dimmer", "dimmer_up", "dimmer_down", "dimmer_stop", "switch", "goto_favorite", "shutter_state", "shutter_command" }
+	},	
+	["heater"] = {
+-- Not yet working as expected
+		type = "thermostat", 
+		category = "hvac", 
+		subcategory = "heater",
+--		subcategory = "hvac",
+		items = { "temp", "thermostat_setpoint", "thermostat_setpoint_heating", "thermostat_mode" }
 	},	
 	["power_meter"] = { 
 		type = "meter.power", 
@@ -91,6 +113,12 @@ local DeviceMap = {
 		category = "security_sensor", 
 		subcategory = "smoke",
 		items = { "smoke_alarm" }
+	},	
+	["siren"] = { 
+		type = "sensor", 
+		category = "siren", 
+		subcategory = "",
+		items = { "siren_alarm" }
 	},	
 	["temperature_sensor"] = { 
 		type = "sensor", 
@@ -171,6 +199,12 @@ local ItemDetails = {
 		has_getter = true, 
 		has_setter = false
 	},
+	rgbcolor = { 
+		value_type = "rgb",
+		value = { wwhite = 0, cwhite = 0, red = 0, green = 0, blue = 0, amber = 0, cyan = 0, purple = 0 },
+		has_getter = true, 
+		has_setter = true
+	},
 	co_alarm = { 
 		value_type = "token",
 		value = "unknown", 
@@ -240,18 +274,97 @@ local ItemDetails = {
 	},
 	temp = { 
 		value_type = "temperature",
-		value = {value = 0, scale = "celsius"},
-		value_min = {value = -85, scale = "celsius"},
-		value_max = {value = 100, scale = "celsius"},
+		value = {value = 0, scale = temp_units},
+		value_min = {value = -85, scale = temp_units},
+		value_max = {value = 100, scale = temp_units},
 		has_getter = true,
 		has_setter = false
+	},
+	thermostat_operating_state = { 
+		value_type = "token",
+		value = "heating", 
+		enum = { "idle", "heating", "cooling", "fan_only", "pending_heat", "pending_cool", "vent_economizer", "aux_heating", "2nd_stage_heating", "2nd_stage_cooling", "2nd_stage_aux_heat", "3rd_stage_aux_heat", "2nd_stage_fan", "3rd_stage_fan" },
+		has_getter = true, 
+		has_setter = true
+	},
+	thermostat_mode = { 
+		value_type = "token",
+		value = "auto", 
+		enum = { "off", "heat", "cool", "auto", "aux", "resume", "fan_only", "furnace", "dry_air", "moist_air", "auto_change_over", "saving_heat", "saving_cool", "away_heat", "away_cool", "full_power", "special", "eco", "emergency_heating", "precooling", "sleep" },
+		has_getter = true, 
+		has_setter = true
+	},
+	thermostat_fan_mode = { 
+		value_type = "token",
+		value = "fanmode_off", 
+		enum = { "fanmode_on_auto_low", "fanmode_on_low", "fanmode_on_auto_high", "fanmode_on_high", "fanmode_on_auto_medium", "fanmode_on_medium", "fanmode_on_circulation", "fanmode_on_humidity_circulation", "fanmode_on_lr_circulation", "fanmode_on_ud_circulation", "fanmode_on_quiet_circulation", "fanmode_on_auto", "fanmode_on", "fanmode_off_auto_low", "fanmode_off_low", "fanmode_off_auto_high", "fanmode_off_high", "fanmode_off_auto_medium", "fanmode_off_medium", "fanmode_off_circulation", "fanmode_off_humidity_circulation", "fanmode_off_lr_circulation", "fanmode_off_ud_circulation", "fanmode_off_quiet_circulation", "fanmode_off" },
+		has_getter = true, 
+		has_setter = true
+	},
+	thermostat_fan_state = { 
+		value_type = "token",
+		value = "idle_off", 
+		enum = { "idle_off", "running_low", "running_high", "running_medium", "circulation_mode", "humidity_circulation_mode", "right_left_circulation_mode", "up_down_circulation_mode", "quiet_circulation_mode" },
+		has_getter = true, 
+		has_setter = true
+	},
+	thermostat_setpoint = { 
+		value_type = "temperature",
+		value = {value = 0, scale = temp_units},
+		value_min = {value = -32, scale = temp_units},
+		value_max = {value = 45, scale = temp_units},
+		has_getter = true,
+		has_setter = true
+	},
+	thermostat_setpoint_heating = { 
+		value_type = "temperature",
+		value = {value = 0, scale = temp_units},
+		value_min = {value = 0, scale = temp_units},
+		value_max = {value = 33, scale = temp_units},
+		has_getter = true,
+		has_setter = true
+	},
+	thermostat_setpoint_cooling = { 
+		value_type = "temperature",
+		value = {value = 0, scale = temp_units},
+		value_min = {value = 15, scale = temp_units},
+		value_max = {value = 45, scale = temp_units},
+		has_getter = true,
+		has_setter = true
 	},
 	ultraviolet = { 
 		value_type = "ultraviolet",
 		value = {value = 0, scale = "uv_index"},
 		has_getter = true,
 		has_setter = false
-	}
+	},
+	goto_favorite = { 
+		value_type = "bool",
+		value = false,
+		has_getter = false,
+		has_setter = true
+	},
+	siren_alarm = { 
+		value_type = "token",
+		value = "unknown",
+		enum = { "siren_inactive", "siren_active", "unknown" },
+		has_getter = true,
+		has_setter = false
+	},
+	shutter_state = { 
+		value_type = "token",
+		value = "idle",
+		enum = { "idle", "learn_upper", "change_roll_direction", "learn_lower", "learn_favorite" },
+		has_getter = true,
+		has_setter = false
+	},
+	shutter_command = { 
+		value_type = "token",
+		value = "off",
+		enum = { "off", "store", "learn_upper", "learn_lower", "learn_favorite", "change_roll_direction" },
+		has_getter = false,
+		has_setter = true
+	}	
 }
 
 -- First run of plugin, do set-ups needed
@@ -282,6 +395,8 @@ local function set_configuration(config)
 		storage.set_number("VB_RC_"..vera.name, 0)
 		table.insert(vera_names, vera.name)
 	end
+	temp_units = config.temp_units or "celcius"
+	storage.set_string("temp_units", temp_units)
 	storage.set_number("max_retry_count", 5)
 	storage.set_number("log_level", config.log_level)
 	storage.set_table("VB_veras", vera_names)

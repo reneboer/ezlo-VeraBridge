@@ -2,8 +2,10 @@
 	"version": "2.0",
 	"meta": "Mapping for two veras, plus and Edge",
 	"instructions": "You must specify a name for each Vera/openLuup that is unique and without spaces or special characters. Use negative device_id to keep but ignore",
-	"behaviours_supported": { "dw_sensor", "motion_sensor", "co_sensor", "co2_sensor", "glass_sensor", "leak_sensor", "light_sensor", "humidity_sensor", "temperature_sensor", "uv_sensor", "dimmer", "switch", "power_meter" },
+	"behaviours_supported": { "dw_sensor", "motion_sensor", "co_sensor", "co2_sensor", "glass_sensor", "leak_sensor", "light_sensor", "humidity_sensor", "temperature_sensor", "smoke_sensor", "uv_sensor", "dimmer", "dimmer_rgb", "switch", "power_meter", "heater", "window_cov", "siren" },
+	"behaviours_unsupported": { "lock, generic_io"},
 	"log_level": 5,
+	"temp_units": "celcius",
 	"veras": [{
 		"name": "OpenLuup",
 		"type": "openLuup",
@@ -16,6 +18,12 @@
 			"room": "",
 			"room_id": ""
 		},{
+			"behavior": "window_cov",
+			"device_id": 64,
+			"name": "WK_SunScreen",
+			"room": "",
+			"room_id": ""
+		},{
 			"behavior": "switch",
 			"device_id": 20008,
 			"name": "MK_CVPumpBathroom",
@@ -25,6 +33,12 @@
 			"behavior": "switch",
 			"device_id": 20010,
 			"name": "MK_CVPumpLivingroom",
+			"room": "",
+			"room_id": ""
+		},{
+			"behavior": "dimmer_rgb",
+			"device_id": 129,
+			"name": "WK_HueColor",
 			"room": "",
 			"room_id": ""
 		}]
@@ -45,12 +59,38 @@
 			"room": "Slaapkamer",
 			"room_id": "5f5b7e0c124c4110b0d07153"
 		},{
+			"behavior": "heater",
+			"device_id": 69,
+			"battery_powered": true,
+			"name": "SK_Heater",
+			"room": "Slaapkamer",
+			"room_id": "5f5b7e0c124c4110b0d07153"
+		},{
 			"behavior": "motion_sensor",
 			"battery_powered": true,
 			"device_id": 66,
 			"name": "SK_Motion",
 			"room": "Slaapkamer",
 			"room_id": "5f5b7e0c124c4110b0d07153"
+		},{
+			"behavior": "motion_sensor",
+			"battery_powered": true,
+			"device_id": 334,
+			"name": "WK_Motion",
+			"room": "",
+			"room_id": ""
+		},{
+			"behavior": "temperature_sensor",
+			"device_id": 335,
+			"name": "WK_Temperature",
+			"room": "",
+			"room_id": ""
+		},{
+			"behavior": "light_sensor",
+			"device_id": 336,
+			"name": "WK_Lux",
+			"room": "",
+			"room_id": ""
 		}]
 	},{
 		"name": "Plus",
