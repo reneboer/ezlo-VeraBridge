@@ -2,7 +2,7 @@
 Bridge selected devices from your Vera to Ezlo Plus on the same local network.
 
 The following devices are currently supported:
-dw_sensor, motion_sensor, co_sensor, co2_sensor, glass_sensor, leak_sensor, light_sensor, humidity_sensor, temperature_sensor, smoke_sensor, uv_sensor, dimmer, switch, power_meter
+dw_sensor, motion_sensor, co_sensor, co2_sensor, glass_sensor, leak_sensor, light_sensor, humidity_sensor, temperature_sensor, smoke_sensor, uv_sensor, dimmer, rgb_dimmer, switch, power_meter, siren, window_cov.
 
 Note: The Ezlo hub must have FW 1.5 or later to poll multiple Veras reliably.
 
