@@ -6,83 +6,75 @@ local storage = require("storage")
 local PLUGIN = storage.get_string("PLUGIN")
 local logger = require("HUB:"..PLUGIN.."/scripts/utils/log").setPrefix(PLUGIN.."/scripts/set_item_value").setLevel(storage.get_number("log_level") or 99)
 
-local function string_parameters(str, ...)
-	local args = {...}
-	str = string.gsub(str, "%%(%d+)", function(n)
-			n = tonumber(n, 10)
-			if n < 1 or n > #args then return "nil" end
-			return tostring(args[n])
-		end
-	)
-	return str
-end
+-- Map item names (type) to Vera URL
+local ItemMapping = {
+	dimmer = function(value)
+				if type(value) == "number" then
+					return "urn:upnp-org:serviceId:Dimming1&action=SetLoadLevelTarget&newLoadlevelTarget="..math.floor(value)
+				else
+					return nil
+				end
+			end,
+	switch = function(value) 
+				if type(value) == "boolean" then 
+					tv = value and "1" or "0"
+					return "urn:upnp-org:serviceId:SwitchPower1&action=SetTarget&newTargetValue="..tv
+				else
+					return nil
+				end
+			end,
+	siren_alarm = function(value)
+				local tv = value == "siren_active" and "1" or "0"
+				return "urn:upnp-org:serviceId:SwitchPower1&action=SetTarget&newTargetValue="..tv
+			end,
+	rgbcolor = function(value)
+				local tv = math.floor(value.red)..","..math.floor(value.green)..","..math.floor(value.blue)
+				return "urn:micasaverde-com:serviceId:Color1&action=SetColorRGB&newColorRGBTarget="..tv
+			end,
+	dimmer_up = function(value) return "urn:upnp-org:serviceId:WindowCovering1&action=Up" end,
+	dimmer_down = function(value) return "urn:upnp-org:serviceId:WindowCovering1&action=Down" end,
+	dimmer_stop = function(value) return "urn:upnp-org:serviceId:WindowCovering1&action=Stop" end
+}
 
 local function vb_set_item(item_id, value)
 	local core = require("core")
 	local http = require("http")
+
+	-- Update local device item
 	local item = core.get_item(item_id)
-	local curVal = item.value
-	if type(curVal) == "table" then
-		if curVal.value == value.value then
-			curVal = nil
-		end
-	else
-		if curVal == value then
-			curVal = nil
-		end
-	end
 	core.update_item_value(item_id, value or false)
-	if curVal == nil then
-		logger.debug("Items current value %1 is same as new value %2.", item.value, value)
-		return
-	end
-	local vera = storage.get_table("VB_D_"..item.device_id)
-	local cnfg = nil
-	if vera then
-		cnfg = storage.get_table("VB_DC_"..vera.name..math.floor(vera.device_id))
-	end
-	if cnfg then
-		-- We have a mapped Vera device for the item
-		logger.debug("Found device =%1", cnfg)
-		local newVal = nil
-		local veraURI
-		if item_id == cnfg.dimmer_id then
-			veraURI = "/data_request?id=lu_action&DeviceNum=%1&serviceId=urn:upnp-org:serviceId:Dimming1&action=SetLoadLevelTarget&newLoadlevelTarget=%2"
-			if type(value) == "boolean" then newVal = value and 100 or 0 end
-		elseif item_id == cnfg.switch_id then
-			if type(value) == "boolean" then newVal = value and 1 or 0 end
-			veraURI = "/data_request?id=lu_action&DeviceNum=%1&serviceId=urn:upnp-org:serviceId:SwitchPower1&action=SetTarget&newTargetValue=%2"
-		elseif item_id == cnfg.rbgcolor_id then
-			newVal = math.floor(value.red)..","..math.floor(value.green)..","..math.floor(value.blue)
-			veraURI = "/data_request?id=lu_action&DeviceNum=%1&serviceId=urn:micasaverde-com:serviceId:Color1&action=SetColorRGB&newColorRGBTarget=%2"
-		elseif cnfg.behaviour == "window_cov" then
-			veraURI = "/data_request?id=lu_action&DeviceNum=%1&serviceId=urn:upnp-org:serviceId:WindowCovering1&action=%2"
-			if item_id == cnfg.dimmer_up_id then
-				newVal = "Up"
-			elseif item_id == cnfg.dimmer_down_id then
-				newVal = "Down"
-			elseif item_id == cnfg.dimmer_stop_id then
-				newVal = "Stop"
-			end
-		else	
-			logger.err("unsupported behavior %1 for lu_action", cnfg.behavior)
-			return
+	
+	-- Is this a item type we could send to a Vera
+	local veraURI = ItemMapping[item.name](value)
+	if veraURI then
+		-- See if item is mapped to Vera bridged device
+		local vera = storage.get_table("VB_D_"..item.device_id)
+		local cnfg = nil
+		if vera then
+			cnfg = storage.get_table("VB_DC_"..vera.name..math.floor(vera.device_id))
 		end
-		if not newVal then newVal = math.floor(value) end
-		local config = storage.get_table("VB_config_"..vera.name)
-		veraURI = string_parameters(veraURI, math.floor(vera.device_id), newVal)
-		if config.type == "Vera" then
-			veraURI = "http://" .. config.ip .. "/port_3480" .. veraURI
-		elseif config.type == "openLuup" then
-			veraURI = "http://" .. config.ip .. ":3480" .. veraURI
-		else
-			logger.err("Unsupported hub type %1. Expect Vera or openLuup.", config.type)
-			return
-		end	
-		logger.debug("Vera %1 Action URL: %2", vera.name, veraURI)
-		http.request { url = veraURI, handler = "HUB:"..PLUGIN.."/scripts/action_handler", user_data = vera.name }
+		if cnfg then
+			-- We have a mapped Vera device for the item
+			logger.debug("Found mapped Vera device: %1", cnfg)
+			local config = storage.get_table("VB_config_"..vera.name)
+			local vt = string.upper(config.type)
+			veraURI = "/data_request?id=lu_action&DeviceNum=" .. math.floor(vera.device_id) .. "&serviceId=" .. veraURI
+			if vt == "VERA" then
+				veraURI = "http://" .. config.ip .. "/port_3480" .. veraURI
+			elseif vt == "OPENLUUP" then
+				veraURI = "http://" .. config.ip .. ":3480" .. veraURI
+			else
+				logger.err("Unsupported hub type %1. Expect Vera or openLuup.", config.type)
+				return
+			end
+			-- Send command to Vera
+			logger.debug("Vera %1 Action URL: %2", vera.name, veraURI)
+			http.request { url = veraURI, handler = "HUB:"..PLUGIN.."/scripts/action_handler", user_data = vera.name }
+		else	
+			logger.debug("Item %1 for device %2 is not mapped to a Vera device", item_id, item.deviceId)
+		end
 	else
-		logger.debug("Item %1 for device %2 is not mapped to a Vera device", item_id, item.deviceId)
+		logger.err("unsupported item type %1 for lu_action", item.name)
 	end
 end
 

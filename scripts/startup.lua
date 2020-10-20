@@ -2,7 +2,7 @@
 	Vera device Bridge plugin for Ezo Linux based hubs
 	
 	File	: startup.lua
-	Version	: 1.2
+	Version	: 1.3
 	Author	: Rene Boer
 --]]
 local PLUGIN = "VeraBridge"
@@ -395,7 +395,7 @@ local function set_configuration(config)
 		storage.set_number("VB_RC_"..vera.name, 0)
 		table.insert(vera_names, vera.name)
 	end
-	temp_units = config.temp_units or "celcius"
+	temp_units = config.temp_units or "celsius"
 	storage.set_string("temp_units", temp_units)
 	storage.set_number("max_retry_count", 5)
 	storage.set_number("log_level", config.log_level)

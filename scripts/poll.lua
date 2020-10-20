@@ -10,10 +10,6 @@ local function vb_poll(args)
 	local http = require("http")
 
 	-- Must have vera name in arg.
---
--- Other logic could be to poll for each device seperately, would mean more devices, slower update. But never a problem with http cache.
---/data_request?id=status&output_format=json&DeviceNum=20008&DataVersion=865189018
--- 	
 	local vera_name = args.name
 	-- Fire off the connection to get lu_status2 from Vera
 	local vera = storage.get_table("VB_config_"..vera_name)
@@ -22,9 +18,10 @@ local function vb_poll(args)
 		if dv ~= "-1" then
 			-- Build Vera/openLuup URL
 			local veraURI = "/data_request?id=lu_status2&output_format=json&Timeout=60&DataVersion=" .. dv
-			if vera.type == "Vera" then
+			local vt = string.upper(vera.type)
+			if vt == "VERA" then
 				veraURI = "http://" .. vera.ip .. "/port_3480" .. veraURI
-			elseif vera.type == "openLuup" then
+			elseif vt == "OPENLUUP" then
 				-- Handle 3480 port number (openLuup)
 				veraURI = "http://" .. vera.ip .. ":3480" .. veraURI
 			else

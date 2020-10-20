@@ -5,7 +5,7 @@
 	"behaviours_supported": { "dw_sensor", "motion_sensor", "co_sensor", "co2_sensor", "glass_sensor", "leak_sensor", "light_sensor", "humidity_sensor", "temperature_sensor", "smoke_sensor", "uv_sensor", "dimmer", "dimmer_rgb", "switch", "power_meter", "heater", "window_cov", "siren" },
 	"behaviours_unsupported": { "lock, generic_io"},
 	"log_level": 5,
-	"temp_units": "celcius",
+	"temp_units": "celsius",
 	"veras": [{
 		"name": "OpenLuup",
 		"type": "openLuup",
