@@ -24,7 +24,7 @@ local ItemMapping = {
 	},
 	["urn:micasaverde-com:serviceId:Color1"] = {
 		["CurrentColor"] = { itemId = "rgbcolor", val_conv = function(val) 
-			-- CurerntColor format is 0=0,1=0,2=255,3=208,4=117
+			-- CurrentColor format is 0=0,1=0,2=255,3=208,4=117
 			local x,y,r,g,b = string.match(val, "0=(%d+),1=(%d+),2=(%d+),3=(%d+),4=(%d+)")
 			local color = { green=tonumber(g) or 0, red=tonumber(r) or 0, blue=tonumber(b) or 0 }
 			return color end }
@@ -32,28 +32,23 @@ local ItemMapping = {
 	["urn:upnp-org:serviceId:TemperatureSensor1"] = {
 		["CurrentTemperature"] = { itemId = "temp", val_conv = function(val) return {value = tonumber(val) or 0, scale = temp_units} end }
 	},
-	["urn:upnp-org:serviceId:TemperatureSetPoint1"] = {
-		["CurrentSetpoint"] = { itemId = "thermostat_setpoint", val_conv = function(val) return {value = tonumber(val) or 0, scale = temp_units} end }
+	["urn:upnp-org:serviceId:TemperatureSetpoint1"] = {
+		["CurrentSetpoint"] = { itemIds = {
+			{ itemId = "thermostat_setpoint", val_conv = function(val) return {value = tonumber(val) or 0, scale = temp_units} end },
+			{ itemId = "thermostat_setpoint_heating", val_conv = function(val) return {value = tonumber(val) or 0, scale = temp_units} end },
+			{ itemId = "thermostat_setpoint_cooling", val_conv = function(val) return {value = tonumber(val) or 0, scale = temp_units} end }
+		}}
 	},
-	["urn:upnp-org:serviceId:TemperatureSetPoint1_Heat"] = {
-		["CurrentSetpoint_Heat"] = { itemId = "thermostat_setpoint_heating", val_conv = function(val) return {value = tonumber(val) or 0, scale = temp_units} end }
+	["urn:upnp-org:serviceId:TemperatureSetpoint1_Heat"] = {
+		["CurrentSetpoint"] = { itemId = "thermostat_setpoint_heating", val_conv = function(val) return {value = tonumber(val) or 0, scale = temp_units} end }
 	},
-	["urn:upnp-org:serviceId:TemperatureSetPoint1_Cool"] = {
-		["CurrentSetpoint_Cool"] = { itemId = "thermostat_setpoint_cooling", val_conv = function(val) return {value = tonumber(val) or 0, scale = temp_units} end }
+	["urn:upnp-org:serviceId:TemperatureSetpoint1_Cool"] = {
+		["CurrentSetpoint"] = { itemId = "thermostat_setpoint_cooling", val_conv = function(val) return {value = tonumber(val) or 0, scale = temp_units} end }
 	},
 	["urn:upnp-org:serviceId:HVAC_UserOperatingMode1"] = {
-		["ModeStatus"] = { itemId = "thermostat_mode", val_conv = function(val) 
-			if value == "Off" then
-				return "off"
-			elseif value == "HeatOn" then
-				return "heat"
-			elseif value == "CoolOn" then
-				return "cool"
-			elseif value == "AutoChangeOver" then
-				return "auto"
-			end
-			-- There are more options, Vera does not seem to support.
-			return "Off"
+		["ModeStatus"] = { itemId = "thermostat_mode", val_conv = function(val)
+			local map = { Off = "off", HeatOn = "heat", CoolOn = "cool", AutoChangeOver = "auto"}
+			return  map[val] or "auto"
 		end }
 	},
 	["urn:micasaverde-com:serviceId:SecuritySensor1"] = {
@@ -198,8 +193,12 @@ local function vb_http_event(event)
 		end
 	elseif event.event == "http_connection_closed" then
 		-- logger.debug("http_connection_closed event %1", event)
+		local timer_sec = 0.5
 		if ed.reason.code ~= 0 then
 			logger.info("Connection to %1 closed. Reason %2", vera_name, ed.reason)
+			-- Force full update as we may miss things on unsuccessful request.
+			storage.set_string("VB_DV_"..vera_name, "0")
+			timer_sec = 10
 		end
 		-- Start new timer for next poll
 		local timer_id = "VB_TimerId_" .. vera_name
@@ -207,7 +206,6 @@ local function vb_http_event(event)
 			-- Avoid multiple timers for single Vera. Can happen when there are timeouts.
 			logger.warn("Timer for Vera %1 is already in progress.", vera_name)
 		else
-			local timer_sec = 5
 			logger.debug("Setting timer for %1 to poll in %2 sec.", vera_name, timer_sec)
 			timer.set_timeout_with_id(timer_sec * 1000, timer_id, "HUB:"..PLUGIN.."/scripts/poll", {name = vera_name})
 		end

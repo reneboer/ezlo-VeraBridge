@@ -66,6 +66,20 @@
 			"room": "Slaapkamer",
 			"room_id": "5f5b7e0c124c4110b0d07153"
 		},{
+			"behavior": "hvac",
+			"device_id": 1169,
+			"battery_powered": true,
+			"name": "SK_HeaterHVAC",
+			"room": "Slaapkamer",
+			"room_id": "5f5b7e0c124c4110b0d07153"
+		},{
+			"behavior": "siren",
+			"device_id": 1167,
+			"battery_powered": true,
+			"name": "Siren",
+			"room": "",
+			"room_id": ""
+		},{
 			"behavior": "motion_sensor",
 			"battery_powered": true,
 			"device_id": 66,

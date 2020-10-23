@@ -2,7 +2,7 @@
 	Vera device Bridge plugin for Ezo Linux based hubs
 	
 	File	: startup.lua
-	Version	: 1.3
+	Version	: 1.4
 	Author	: Rene Boer
 --]]
 local PLUGIN = "VeraBridge"
@@ -44,9 +44,14 @@ local DeviceMap = {
 -- Not yet working as expected
 		type = "thermostat", 
 		category = "hvac", 
-		subcategory = "heater",
---		subcategory = "hvac",
-		items = { "temp", "thermostat_setpoint", "thermostat_setpoint_heating", "thermostat_mode" }
+		subcategory = "hvac",
+		items = { "temp", "thermostat_setpoint", "thermostat_setpoint_heating", "thermostat_operating_state", "thermostat_mode" }
+	},	
+	["hvac"] = {
+		type = "thermostat", 
+		category = "hvac", 
+		subcategory = "hvac",
+		items = { "temp", "thermostat_setpoint", "thermostat_setpoint_heating", "thermostat_setpoint_cooling", "thermostat_operating_state", "thermostat_mode", "thermostat_fan_mode", "thermostat_fan_state" }
 	},	
 	["power_meter"] = { 
 		type = "meter.power", 
@@ -118,7 +123,7 @@ local DeviceMap = {
 		type = "sensor", 
 		category = "siren", 
 		subcategory = "",
-		items = { "siren_alarm" }
+		items = { "switch", "siren_alarm" }
 	},	
 	["temperature_sensor"] = { 
 		type = "sensor", 
@@ -282,7 +287,7 @@ local ItemDetails = {
 	},
 	thermostat_operating_state = { 
 		value_type = "token",
-		value = "heating", 
+		value = "idle", 
 		enum = { "idle", "heating", "cooling", "fan_only", "pending_heat", "pending_cool", "vent_economizer", "aux_heating", "2nd_stage_heating", "2nd_stage_cooling", "2nd_stage_aux_heat", "3rd_stage_aux_heat", "2nd_stage_fan", "3rd_stage_fan" },
 		has_getter = true, 
 		has_setter = true
@@ -319,8 +324,8 @@ local ItemDetails = {
 	thermostat_setpoint_heating = { 
 		value_type = "temperature",
 		value = {value = 0, scale = temp_units},
-		value_min = {value = 0, scale = temp_units},
-		value_max = {value = 33, scale = temp_units},
+		value_min = {value = 15, scale = temp_units},
+		value_max = {value = 45, scale = temp_units},
 		has_getter = true,
 		has_setter = true
 	},
@@ -434,10 +439,14 @@ local function add_device(behavior, gw, name, room, battery_powered, vera_name, 
 		cnfg.vera_name = vera_name
 		-- Add battery item if user wants it.
 		if battery_powered then 
-			table.insert(map.items, 1, "battery")
-		else
-			if map.items[1] == "battery" then
-				table.remove(map.items, 1)
+			local base_item = ItemDetails["battery"]
+			base_item.name = "battery"
+			base_item.device_id = newdev
+			local it, err = core.add_item(base_item)
+			if it then
+				if base_item.has_getter then cnfg["battery_id"] = it	end
+			else
+				logger.err("failed to add item %1 to device %2", "battery", newdev)
 			end
 		end
 		for _, item in pairs(map.items) do
@@ -445,8 +454,11 @@ local function add_device(behavior, gw, name, room, battery_powered, vera_name, 
 			if base_item then
 				base_item.name = item
 				base_item.device_id = newdev
---					if id.default then base_item.value = id.default end
---					if id.enum then base_item.enum = id.enum end
+				if behavior == "heater" and item == "thermostat_mode" then
+					logger.info("set mode for heater device")
+					base_item.value = "heat"
+					base_item.enum = { "off", "heat", "auto" }
+				end
 				local it, err = core.add_item(base_item)
 				if it then
 					-- We have getter, so capture item id for it to handle updates from Vera.
